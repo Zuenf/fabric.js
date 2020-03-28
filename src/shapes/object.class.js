@@ -635,10 +635,18 @@
     absolutePositioned: false,
 
     /**
+     * Array of supported ctx filters names
+     * @type array
+     */
+    ctxFilterNames: ['blur'],
+
+    /**
      * Constructor
      * @param {Object} [options] Options object
      */
     initialize: function(options) {
+      this.ctxFilter =  {};
+
       if (options) {
         this.setOptions(options);
       }
@@ -983,6 +991,14 @@
       else if (key === 'dirty' && this.group) {
         this.group.set('dirty', value);
       }
+      else if (this.ctxFilterNames.indexOf(key) > -1) {
+        if (value) {
+          this._addCtxFilter(key, value);
+        }
+        else {
+          this._removeCtxFilter(key, value);
+        }
+      }
 
       this[key] = value;
 
@@ -999,6 +1015,68 @@
 
       return this;
     },
+
+    /**
+     * Add filter to ctxFilter
+     * @param {String} key filter name
+     * @param {String} value filter value
+     */
+    _addCtxFilter: function(key, value){
+      this.ctxFilter[key] = value;
+    },
+
+    /**
+     * Remove filter from ctxFilter
+     * @param {String} key filter name
+     */
+    _removeCtxFilter: function(key){
+      delete this.ctxFilter[key];
+    },
+
+    /**
+     * Prepare ctxFilter values to use in ctx.filter
+     * @param {String} key filter name
+     * @param {String} value filter value
+     * @return {String}
+     */
+    _prepareCtxFilterValue: function(key, value){
+
+      if (key === 'blur') {
+        value = value + 'px';
+      }
+
+      return value;
+    },
+
+    /**
+     * Returns string of filters to use in ctx.filter
+     * @return {String}
+     */
+    _getCtxFilterString: function(){
+      var ctxFilter = [];
+
+      console.log('this.ctxFilter = ', this.ctxFilter);
+
+      for (var key in this.ctxFilter) {
+        if (!this.ctxFilter.hasOwnProperty(key)) {
+          continue;
+        }
+
+        var value = this._prepareCtxFilterValue(key, this.ctxFilter[key]);
+
+        ctxFilter.push(key + '(' + value + ')');
+      }
+
+      if (ctxFilter.length) {
+        ctxFilter = ctxFilter.sort().join(' ');
+      }
+      else {
+        ctxFilter = 'none';
+      }
+
+      return ctxFilter;
+    },
+
 
     /**
      * This callback function is called by the parent group of an object every
@@ -1075,6 +1153,10 @@
       }
       if (this.isCacheDirty()) {
         this.statefullCache && this.saveState({ propertySet: 'cacheProperties' });
+        //apply ctx filters
+        this._cacheContext.filter = this._getCtxFilterString();
+
+        console.log(this._getCtxFilterString());
         this.drawObject(this._cacheContext, options.forClipping);
         this.dirty = false;
       }
@@ -1133,6 +1215,12 @@
       if (this.clipPath) {
         return true;
       }
+
+      var ctxFilterString = this._getCtxFilterString();
+      if (ctxFilterString && ctxFilterString !== 'none') {
+        return true;
+      }
+
       return false;
     },
 
@@ -1204,6 +1292,7 @@
         this._setStrokeStyles(ctx, this);
         this._setFillStyles(ctx, this);
       }
+
       this._render(ctx);
       this._drawClipPath(ctx);
       this.fill = originalFill;
