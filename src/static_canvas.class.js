@@ -1277,6 +1277,8 @@
       options.reviver = reviver;
       var markup = [];
 
+      fabric.generatedFilterIds = [];
+
       this._setSVGPreamble(markup, options);
       this._setSVGHeader(markup, options);
       if (this.clipPath) {
