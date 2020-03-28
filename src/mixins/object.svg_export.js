@@ -38,9 +38,14 @@
           strokeMiterLimit = this.strokeMiterLimit ? this.strokeMiterLimit : '4',
           opacity = typeof this.opacity !== 'undefined' ? this.opacity : '1',
           visibility = this.visible ? '' : ' visibility: hidden;',
-          filter = skipShadow ? '' : this.getSvgFilter(),
+          filter = skipShadow ? '' : this.getShadowFilter(),
           fill = getSvgColorString('fill', this.fill),
-          stroke = getSvgColorString('stroke', this.stroke);
+          stroke = getSvgColorString('stroke', this.stroke),
+          ctxFilter = this._getCtxFilterString();
+
+      if (ctxFilter !== 'none') {
+        filter = this.getSvgFilter();
+      }
 
       return [
         stroke,
@@ -107,14 +112,40 @@
       }).join(' ');
     },
 
+    getSvgFiltersHash: function(){
+      var filtersHash = '';
+      var ctxFilterString = this._getCtxFilterString();
+      var bb = this.getBoundingRect();
+
+      if (ctxFilterString !== 'none') {
+        filtersHash =  bb.width + '|' + bb.height + '|' + ctxFilterString;
+      }
+
+      if (filtersHash) {
+        filtersHash = fabric.util.getHashOfString(filtersHash);
+      }
+
+      return filtersHash;
+    },
+
+    //TODO join getShadowFilter and getSvgFilter to apply all filters at the time
+    /**
+     * Returns filter for ctxFilter
+     * @return {String}
+     */
+    getSvgFilter: function() {
+      var filtersHash = this.getSvgFiltersHash();
+
+      return filtersHash ? 'filter: url(#SVGID_' + filtersHash + ');' : '';
+    },
+
     /**
      * Returns filter for svg shadow
      * @return {String}
      */
-    getSvgFilter: function() {
+    getShadowFilter: function() {
       return this.shadow ? 'filter: url(#SVGID_' + this.shadow.id + ');' : '';
     },
-
     /**
      * Returns id attribute for svg output
      * @return {String}
@@ -174,6 +205,42 @@
       return '\t' + this._createBaseClipPathSVGMarkup(this._toSVG(reviver), { reviver: reviver });
     },
 
+    generateSvgFiltersMarkup: function(){
+      var markup = '',
+          filtersHash = this.getSvgFiltersHash(),
+          id = 'SVGID_' + filtersHash;
+
+      if (!filtersHash) {
+        return markup;
+      }
+
+      //уже есть такой фильтр
+      if (fabric.generatedFilterIds.indexOf(id) > -1) {
+        return markup;
+      }
+
+      fabric.generatedFilterIds.push(id);
+
+      var bb = this.getBoundingRect();
+
+      //generate blur filter
+      if (this.blur) {
+        //scale blur for reduced svg objects
+        var blur = this.blur / this.scaleX,
+            paddingX = (this.blur / bb.width) * 100 * 4,
+            paddingY = (this.blur / bb.height) * 100 * 4,
+            width = 100 + (paddingX * 2),
+            height = 100 + (paddingY * 2);
+
+        markup += '<filter id="' + id + '" ' +
+          'x="-' + paddingX + '%" y="-' + paddingY + '%" width="' + width + '%" height="' + height + '%">' +
+          '<feGaussianBlur stdDeviation="' + (blur * 0.8) + '"/>' +
+          '</filter>';
+      }
+
+      return markup;
+    },
+
     /**
      * @private
      */
@@ -199,7 +266,7 @@
       var noStyle = options.noStyle,
           reviver = options.reviver,
           styleInfo = noStyle ? '' : 'style="' + this.getSvgStyles() + '" ',
-          shadowInfo = options.withShadow ? 'style="' + this.getSvgFilter() + '" ' : '',
+          filter = options.withShadow ? 'style="' + this.getShadowFilter() + '" ' : '',
           clipPath = this.clipPath,
           vectorEffect = this.strokeUniform ? 'vector-effect="non-scaling-stroke" ' : '',
           absoluteClipPath = clipPath && clipPath.absolutePositioned,
@@ -207,7 +274,13 @@
           commonPieces, markup = [], clipPathMarkup,
           // insert commons in the markup, style and svgCommons
           index = objectMarkup.indexOf('COMMON_PARTS'),
-          additionalTransform = options.additionalTransform;
+          additionalTransform = options.additionalTransform,
+          ctxFilter = this._getCtxFilterString();
+
+      if (ctxFilter !== 'none') {
+        filter = 'style="' + this.getSvgFilter() + '" ';
+      }
+
       if (clipPath) {
         clipPath.clipPathId = 'CLIPPATH_' + fabric.Object.__uid++;
         clipPathMarkup = '<clipPath id="' + clipPath.clipPathId + '" >\n' +
@@ -216,13 +289,13 @@
       }
       if (absoluteClipPath) {
         markup.push(
-          '<g ', shadowInfo, this.getSvgCommons(), ' >\n'
+          '<g ', filter, this.getSvgCommons(), ' >\n'
         );
       }
       markup.push(
         '<g ',
         this.getSvgTransform(false),
-        !absoluteClipPath ? shadowInfo + this.getSvgCommons() : '',
+        !absoluteClipPath ? filter + this.getSvgCommons() : '',
         ' >\n'
       );
       commonPieces = [
@@ -240,6 +313,10 @@
       }
       if (shadow) {
         markup.push(shadow.toSVG(this));
+      }
+
+      if (ctxFilter !== 'none') {
+        markup.push(this.generateSvgFiltersMarkup());
       }
       if (clipPath) {
         markup.push(clipPathMarkup);
