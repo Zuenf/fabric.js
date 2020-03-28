@@ -1566,11 +1566,10 @@ fabric.CommonMethods = {
       }).join(' ') + ')';
     },
     /**
-     * given an array of 6 number returns something like `"matrix(...numbers)"`
+     * returns hash of string
      * @memberOf fabric.util
-     * @param {Array} trasnform an array with 6 numbers
-     * @return {String} transform matrix for svg
-     * @return {Object.y} Limited dimensions by Y
+     * @param {String} str just a string
+     * @return {Number} hash of string
      */
 
     getHashOfString: function(str) {
@@ -13589,11 +13588,17 @@ fabric.util.object.extend(fabric.StaticCanvas.prototype, /** @lends fabric.Stati
     absolutePositioned: false,
 
     /**
+     * Array of supported ctx filters names
+     * @type array
+     */
+    ctxFilterNames: ['blur'],
+
+    /**
      * Constructor
      * @param {Object} [options] Options object
      */
     initialize: function(options) {
-      this.ctxFilter = {};
+      this.ctxFilter =  {};
 
       if (options) {
         this.setOptions(options);
@@ -13939,7 +13944,7 @@ fabric.util.object.extend(fabric.StaticCanvas.prototype, /** @lends fabric.Stati
       else if (key === 'dirty' && this.group) {
         this.group.set('dirty', value);
       }
-      else if (['blur', 'grayscale'].indexOf(key) > -1) {
+      else if (this.ctxFilterNames.indexOf(key) > -1) {
         if (value) {
           this._addCtxFilter(key, value);
         }
@@ -13964,26 +13969,31 @@ fabric.util.object.extend(fabric.StaticCanvas.prototype, /** @lends fabric.Stati
       return this;
     },
 
+    /**
+     * Add filter to ctxFilter
+     * @param {String} key filter name
+     * @param {String} value filter value
+     */
     _addCtxFilter: function(key, value){
       this.ctxFilter[key] = value;
     },
 
+    /**
+     * Remove filter from ctxFilter
+     * @param {String} key filter name
+     */
     _removeCtxFilter: function(key){
       delete this.ctxFilter[key];
     },
 
-    _setCtxFilter: function(filter){
-      if (typeof filter !== 'object') {
-        return;
-      }
-      this.ctxFilter = filter;
-    },
-
-    resetCtxFilter: function(){
-      this.ctxFilter = {};
-    },
-
+    /**
+     * Prepare ctxFilter values to use in ctx.filter
+     * @param {String} key filter name
+     * @param {String} value filter value
+     * @return {String}
+     */
     _prepareCtxFilterValue: function(key, value){
+
       if (key === 'blur') {
         value = value + 'px';
       }
@@ -13991,8 +14001,14 @@ fabric.util.object.extend(fabric.StaticCanvas.prototype, /** @lends fabric.Stati
       return value;
     },
 
+    /**
+     * Returns string of filters to use in ctx.filter
+     * @return {String}
+     */
     _getCtxFilterString: function(){
       var ctxFilter = [];
+
+      console.log('this.ctxFilter = ', this.ctxFilter);
 
       for (var key in this.ctxFilter) {
         if (!this.ctxFilter.hasOwnProperty(key)) {
@@ -14090,7 +14106,10 @@ fabric.util.object.extend(fabric.StaticCanvas.prototype, /** @lends fabric.Stati
       }
       if (this.isCacheDirty()) {
         this.statefullCache && this.saveState({ propertySet: 'cacheProperties' });
+        //apply ctx filters
         this._cacheContext.filter = this._getCtxFilterString();
+
+        console.log(this._getCtxFilterString());
         this.drawObject(this._cacheContext, options.forClipping);
         this.dirty = false;
       }
@@ -14149,9 +14168,12 @@ fabric.util.object.extend(fabric.StaticCanvas.prototype, /** @lends fabric.Stati
       if (this.clipPath) {
         return true;
       }
-      if (this.ctxFilter && this.ctxFilter !== 'none') {
+
+      var ctxFilterString = this._getCtxFilterString();
+      if (ctxFilterString && ctxFilterString !== 'none') {
         return true;
       }
+
       return false;
     },
 
@@ -14223,10 +14245,6 @@ fabric.util.object.extend(fabric.StaticCanvas.prototype, /** @lends fabric.Stati
         this._setStrokeStyles(ctx, this);
         this._setFillStyles(ctx, this);
       }
-
-      /*if (this.ctxFilter) {
-        ctx.filter = this.ctxFilter;
-      }*/
 
       this._render(ctx);
       this._drawClipPath(ctx);
@@ -16148,7 +16166,7 @@ fabric.util.object.extend(fabric.Object.prototype, /** @lends fabric.Object.prot
       return filtersHash;
     },
 
-    //TODO join getShadowFilter and getSvgFilter to apply all filters at the time
+    //TODO объединить getShadowFilter и getSvgFilter, чтоб применялись все фильтры разом
     /**
      * Returns filter for ctxFilter
      * @return {String}
@@ -16243,9 +16261,9 @@ fabric.util.object.extend(fabric.Object.prototype, /** @lends fabric.Object.prot
 
       var bb = this.getBoundingRect();
 
-      //формируем блур (пока только его)
+      //generate blur filter
       if (this.blur) {
-        //указываем блур с учетом скейла, иначе для больших свг он будет слишком маленьким
+        //scale blur for reduced svg objects
         var blur = this.blur / this.scaleX,
             paddingX = (this.blur / bb.width) * 100 * 4,
             paddingY = (this.blur / bb.height) * 100 * 4,
@@ -16334,6 +16352,7 @@ fabric.util.object.extend(fabric.Object.prototype, /** @lends fabric.Object.prot
       if (shadow) {
         markup.push(shadow.toSVG(this));
       }
+
       if (ctxFilter !== 'none') {
         markup.push(this.generateSvgFiltersMarkup());
       }
