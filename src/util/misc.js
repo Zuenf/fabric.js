@@ -973,6 +973,22 @@
       return 'matrix(' + transform.map(function(value) {
         return fabric.util.toFixed(value, fabric.Object.NUM_FRACTION_DIGITS);
       }).join(' ') + ')';
+    },
+    /**
+     * returns hash of string
+     * @memberOf fabric.util
+     * @param {String} str just a string
+     * @return {Number} hash of string
+     */
+
+    getHashOfString: function(str) {
+      var hash = 0, i, chr;
+      for (i = 0; i < str.length; i++) {
+        chr   = str.charCodeAt(i);
+        hash  = ((hash << 5) - hash) + chr;
+        hash |= 0; // Convert to 32bit integer
+      }
+      return hash;
     }
   };
 })(typeof exports !== 'undefined' ? exports : this);
