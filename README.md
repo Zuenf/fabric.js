@@ -213,6 +213,7 @@ For example:
             left : 100,
             width : 60,
             height : 70,
+            blur: 5,
             fill : 'red'
         });
 
