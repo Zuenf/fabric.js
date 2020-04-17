@@ -49,6 +49,7 @@ fabric.ElementsParser = function(elements, callback, options, reviver, parsingOp
       var _options;
       _this.resolveGradient(obj, el, 'fill');
       _this.resolveGradient(obj, el, 'stroke');
+      _this.resolveBlur(obj, el);
       if (obj instanceof fabric.Image && obj._originalElement) {
         _options = obj.parsePreserveAspectRatioAttribute(el);
       }
@@ -77,6 +78,36 @@ fabric.ElementsParser = function(elements, callback, options, reviver, parsingOp
       var opacityAttr = el.getAttribute(property + '-opacity');
       var gradient = fabric.Gradient.fromElement(gradientDef, obj, opacityAttr, this.options);
       obj.set(property, gradient);
+    }
+  };
+
+  proto.resolveBlur = function(obj, el) {
+    var blur = 0,
+        parent = el,
+        regexUrl = /^url\(['"]?#([^'"]+)['"]?\)/,
+        filterAttr, id;
+
+    console.log(fabric.blurDefs);
+
+    while (parent && parent.getAttribute) {
+      filterAttr = parent.getAttribute('filter');
+      id = '';
+
+      if (filterAttr && regexUrl.test(filterAttr)) {
+        id = filterAttr.match(regexUrl)[1];
+      }
+
+      if (id && fabric.blurDefs[this.svgUid][id]) {
+        blur += fabric.blurDefs[this.svgUid][id];
+      }
+
+      parent = parent.parentNode;
+    }
+
+    console.log('blur', blur);
+
+    if (blur) {
+      obj.set('blur', blur);
     }
   };
 

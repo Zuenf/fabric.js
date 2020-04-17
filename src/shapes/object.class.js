@@ -1055,8 +1055,6 @@
     _getCtxFilterString: function(){
       var ctxFilter = [];
 
-      console.log('this.ctxFilter = ', this.ctxFilter);
-
       for (var key in this.ctxFilter) {
         if (!this.ctxFilter.hasOwnProperty(key)) {
           continue;
@@ -1155,8 +1153,6 @@
         this.statefullCache && this.saveState({ propertySet: 'cacheProperties' });
         //apply ctx filters
         this._cacheContext.filter = this._getCtxFilterString();
-
-        console.log(this._getCtxFilterString());
         this.drawObject(this._cacheContext, options.forClipping);
         this.dirty = false;
       }

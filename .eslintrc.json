@@ -32,7 +32,7 @@
     ],
     "linebreak-style": [
       2,
-      "unix"
+      "windows"
     ],
     "no-loop-func": 2,
     "no-multi-str": 2,

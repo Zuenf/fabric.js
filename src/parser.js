@@ -49,7 +49,8 @@
         opacity:              'opacity',
         'clip-path':          'clipPath',
         'clip-rule':          'clipRule',
-        'vector-effect':      'strokeUniform'
+        'vector-effect':      'strokeUniform',
+        filter: 'filter'
       },
 
       colorAttributes = {
@@ -66,6 +67,7 @@
 
   fabric.cssRules = { };
   fabric.gradientDefs = { };
+  fabric.blurDefs = { };
   fabric.clipPaths = { };
 
   function normalizeAttr(attr) {
@@ -704,13 +706,16 @@
         return fabric.svgValidTagNamesRegEx.test(el.nodeName.replace('svg:', ''));
       });
     });
+    fabric.blurDefs[svgUid] = fabric.getBlurDefs(doc);
     fabric.gradientDefs[svgUid] = fabric.getGradientDefs(doc);
     fabric.cssRules[svgUid] = fabric.getCSSRules(doc);
     fabric.clipPaths[svgUid] = clipPaths;
+
     // Precedence of rules:   style > class > attribute
     fabric.parseElements(elements, function(instances, elements) {
       if (callback) {
         callback(instances, options, elements, descendants);
+        delete fabric.blurDefs[svgUid];
         delete fabric.gradientDefs[svgUid];
         delete fabric.cssRules[svgUid];
         delete fabric.clipPaths[svgUid];
@@ -811,6 +816,23 @@
         gradientDefs[el.getAttribute('id')] = el;
       }
       return gradientDefs;
+    },
+
+
+    getBlurDefs: function(doc) {
+      var tagArray = ['filter'], elList = _getMultipleNodes(doc, tagArray), el, j = 0, blursDefs = { }, blurEl, blur;
+      j = elList.length;
+      while (j--) {
+        el = elList[j];
+        if (el.getElementsByTagName('feMerge').length) {
+          continue;
+        }
+
+        blurEl = el.getElementsByTagName('feGaussianBlur')[0];
+        blur = blurEl.getAttribute('stdDeviation');
+        blursDefs[el.getAttribute('id')] = blur / 0.8;
+      }
+      return blursDefs;
     },
 
     /**
