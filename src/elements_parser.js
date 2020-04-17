@@ -87,8 +87,6 @@ fabric.ElementsParser = function(elements, callback, options, reviver, parsingOp
         regexUrl = /^url\(['"]?#([^'"]+)['"]?\)/,
         filterAttr, id;
 
-    console.log(fabric.blurDefs);
-
     while (parent && parent.getAttribute) {
       filterAttr = parent.getAttribute('filter');
       id = '';
@@ -103,8 +101,6 @@ fabric.ElementsParser = function(elements, callback, options, reviver, parsingOp
 
       parent = parent.parentNode;
     }
-
-    console.log('blur', blur);
 
     if (blur) {
       obj.set('blur', blur);
