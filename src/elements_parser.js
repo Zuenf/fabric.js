@@ -104,6 +104,7 @@ fabric.ElementsParser = function(elements, callback, options, reviver, parsingOp
 
     if (blur) {
       obj.set('blur', blur);
+      obj.set('origBlur', blur);
     }
   };
 

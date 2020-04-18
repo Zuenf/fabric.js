@@ -622,6 +622,9 @@
      */
     inverted: false,
 
+    blur: 0,
+    origBlur: 0,
+
     /**
      * Meaningful ONLY when the object is used as clipPath.
      * if true, the clipPath will have its top and left relative to canvas, and will
@@ -758,7 +761,7 @@
       var canvas = this._cacheCanvas,
           dims = this._limitCacheSize(this._getCacheCanvasDimensions()),
           minCacheSize = fabric.minCacheSideLimit,
-          width = dims.width, height = dims.height, drawingWidth, drawingHeight,
+          width = dims.width + this.blur * 2, height = dims.height + this.blur * 2, drawingWidth, drawingHeight,
           zoomX = dims.zoomX, zoomY = dims.zoomY,
           dimensionsChanged = width !== this.cacheWidth || height !== this.cacheHeight,
           zoomChanged = this.zoomX !== zoomX || this.zoomY !== zoomY,
@@ -789,8 +792,8 @@
         drawingHeight = dims.y / 2;
         this.cacheTranslationX = Math.round(canvas.width / 2 - drawingWidth) + drawingWidth;
         this.cacheTranslationY = Math.round(canvas.height / 2 - drawingHeight) + drawingHeight;
-        this.cacheWidth = width;
-        this.cacheHeight = height;
+        this.cacheWidth = width + this.blur * 2;
+        this.cacheHeight = height + this.blur * 2;
         this._cacheContext.translate(this.cacheTranslationX, this.cacheTranslationY);
         this._cacheContext.scale(zoomX, zoomY);
         this.zoomX = zoomX;
